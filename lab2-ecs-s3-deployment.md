@@ -27,9 +27,18 @@ Internet → CloudFront → S3 (Blazor SPA)
 
 ### AWS Credentials Setup
 
+⚠️ **Note**: If you completed **local development setup** from the main README, you already have AWS credentials configured. You can reuse the `lecture-local-developer` user and add the additional permissions listed below, or create a new dedicated user for this lab.
+
 ⚠️ **Security Best Practice**: Create a dedicated IAM user for this lab instead of using Administrator access.
 
-#### Step 1: Create IAM User (AWS Console)
+#### Step 1: Create IAM User (AWS Console) - Skip if reusing local dev credentials
+
+💡 **If reusing local dev credentials**: Add the following additional policies to your existing `lecture-local-developer` user:
+- `AmazonECS_FullAccess`
+- `AmazonEC2ContainerRegistryFullAccess`
+- `AmazonS3FullAccess`
+- `EC2FullAccess`
+- `CloudFrontFullAccess`
 
 1. **Navigate to IAM Console** → **Users** → **Create user**
 
@@ -46,6 +55,7 @@ Internet → CloudFront → S3 (Blazor SPA)
      - `EC2FullAccess` (for ALB and security groups)
      - `CloudWatchFullAccess`
      - `CloudFrontFullAccess`
+     - `AmazonBedrockFullAccess` (for AI functionality)
    - **Note**: These are broader permissions for lab convenience. In production, use more restrictive policies.
 
 4. **Create User**

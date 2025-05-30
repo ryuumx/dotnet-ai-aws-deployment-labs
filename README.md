@@ -216,6 +216,90 @@ Internet → CloudFront → S3 (Blazor SPA)
 - **AWS SAM CLI** (for Lab 3)
 - **Git** for version control
 
+### Local Development and Testing
+
+Before deploying to AWS, you can run and test the application locally. This requires AWS credentials for Bedrock AI integration.
+
+#### AWS Credentials for Local Development
+
+1. **Create IAM User for Local Development**:
+   - Go to **IAM Console** → **Users** → **Create user**
+   - **User name**: `lecture-local-developer`
+   - **Attach policies directly**:
+     - `AmazonBedrockFullAccess` (for AI functionality)
+     - `CloudWatchLogsFullAccess` (for logging)
+
+2. **Create Access Keys**:
+   - Select your user → **Security credentials** tab
+   - **Create access key** → **Command Line Interface (CLI)**
+   - **Save credentials** securely
+
+3. **Configure AWS CLI**:
+   ```bash
+   # Configure AWS credentials
+   aws configure
+   
+   # Enter your values:
+   # AWS Access Key ID: [Your Access Key ID]
+   # AWS Secret Access Key: [Your Secret Access Key]
+   # Default region name: us-east-1
+   # Default output format: json
+   
+   # Verify configuration
+   aws sts get-caller-identity
+   ```
+
+#### Running the Application Locally
+
+1. **Clone and setup**:
+   ```bash
+   git clone <repository-url>
+   cd LectureSummarizer
+   ```
+
+2. **Test Backend API**:
+   ```bash
+   # Navigate to API project
+   cd LectureSummarizer.API
+   
+   # Run the API
+   dotnet run
+   
+   # Test health endpoint in another terminal
+   curl http://localhost:5273/health
+   
+   # API will be available at http://localhost:5273
+   ```
+
+3. **Test Razor Frontend**:
+   ```bash
+   # Navigate to Web project (new terminal)
+   cd LectureSummarizer.Web
+   
+   # Run the web application
+   dotnet run
+   
+   # Web app will be available at http://localhost:5000
+   ```
+
+4. **Test Blazor SPA Frontend**:
+   ```bash
+   # Navigate to SPA project (new terminal)
+   cd LectureSummarizer.Web.SPA
+   
+   # Run the SPA
+   dotnet run
+   
+   # SPA will be available at http://localhost:5001
+   ```
+
+5. **End-to-End Testing**:
+   - Visit either frontend URL
+   - Upload a sample PDF lecture file
+   - Verify AI summarization works with AWS Bedrock
+
+⚠️ **Note**: The same AWS credentials created for local testing can be reused for Lab deployments, though you may need additional permissions for specific AWS services (ECS, Lambda, etc.).
+
 ### Quick Start
 
 1. **Clone the repository**:
@@ -261,6 +345,14 @@ By completing these labs, you will gain practical experience with:
 - Understanding different pricing models
 - Right-sizing infrastructure for workload patterns
 - Balancing performance with cost efficiency
+
+## Real-World Applications
+
+These patterns reflect actual enterprise decisions:
+
+- **Startups** often begin with **Lab 3 (Serverless)** for cost efficiency and rapid iteration
+- **Enterprises** may use **Lab 1 (EC2)** for legacy applications and compliance requirements  
+- **Modern SaaS companies** typically adopt **Lab 2 (Containers)** for microservices architectures
 
 The skills learned in these labs directly apply to production systems handling millions of requests and users worldwide.
 
