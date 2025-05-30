@@ -1,0 +1,80 @@
+﻿@{
+    ViewData["Title"] = "Lecture Summarizer";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="text-center mb-0">📚 Lecture Summarizer</h2>
+                    <p class="text-center text-muted mb-0">Upload a PDF lecture and get AI-powered key summaries</p>
+                </div>
+                <div class="card-body">
+                    @if (ViewBag.Error != null)
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            @ViewBag.Error
+                        </div>
+                    }
+
+                    <form asp-action="SummarizeLecture" method="post" enctype="multipart/form-data" id="uploadForm">
+                        <div class="mb-3">
+                            <label for="file" class="form-label">Select PDF Lecture</label>
+                            <input type="file" class="form-control" id="file" name="file" accept=".pdf" required>
+                            <div class="form-text">Only PDF files are supported. Maximum file size: 10MB</div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <span id="spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                                <span id="btnText">📝 Generate Summary</span>
+                            </button>
+                        </div>
+                    </form>
+
+                    @if (ViewBag.Summary != null)
+                    {
+                        var summary = ViewBag.Summary as LectureSummarizer.Shared.Models.SummaryResponse;
+                        if (summary != null && summary.Success)
+                        {
+                            <div class="mt-4">
+                                <div class="card bg-light">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">📋 Summary for: @summary.FileName</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="summary-content">
+                                            @Html.Raw(summary.Summary.Replace("\n", "<br/>"))
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('uploadForm').addEventListener('submit', function() {
+    const submitBtn = document.getElementById('submitBtn');
+    const spinner = document.getElementById('spinner');
+    const btnText = document.getElementById('btnText');
+    
+    submitBtn.disabled = true;
+    spinner.classList.remove('d-none');
+    btnText.textContent = ' Processing...';
+});
+</script>
+
+<style>
+.summary-content {
+    line-height: 1.6;
+    font-size: 1.1em;
+}
+.card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+</style>

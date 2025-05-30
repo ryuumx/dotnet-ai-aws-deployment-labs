@@ -1,0 +1,6 @@
+@LectureSummarizer.API_HostAddress = http://localhost:5131
+
+GET {{LectureSummarizer.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

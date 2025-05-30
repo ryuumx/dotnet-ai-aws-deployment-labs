@@ -1,0 +1,204 @@
+@page "/"
+@using LectureSummarizer.Shared.Models
+@using LectureSummarizer.Web.SPA.Services
+@using Microsoft.AspNetCore.Components.Forms
+@inject ILectureSummaryService SummaryService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Lecture Summarizer</PageTitle>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="text-center mb-0">📚 Lecture Summarizer</h2>
+                    <p class="text-center mb-0 opacity-75">Upload a PDF lecture and get AI-powered key summaries</p>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <i class="fas fa-exclamation-triangle"></i> @errorMessage
+                        </div>
+                    }
+
+                    <EditForm Model="@uploadModel" OnValidSubmit="@HandleValidSubmit" enctype="multipart/form-data">
+                        <DataAnnotationsValidator />
+                        
+                        <div class="mb-3">
+                            <label for="fileInput" class="form-label fw-bold">Select PDF Lecture</label>
+                            <InputFile id="fileInput" 
+                                      class="form-control" 
+                                      OnChange="@OnFileSelected" 
+                                      accept=".pdf" 
+                                      disabled="@isProcessing" />
+                            <div class="form-text">
+                                <i class="fas fa-info-circle"></i> Only PDF files are supported. Maximum file size: 10MB
+                            </div>
+                            <ValidationMessage For="@(() => uploadModel.File)" />
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" 
+                                    class="btn btn-primary btn-lg" 
+                                    disabled="@(selectedFile == null || isProcessing)">
+                                @if (isProcessing)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                    <span>🤖 AI is analyzing your lecture...</span>
+                                }
+                                else
+                                { 
+                                    <span>📝 Generate Summary</span>
+                                }
+                            </button>
+                        </div>
+                    </EditForm>
+
+                    @if (summaryResult != null && summaryResult.Success)
+                    {
+                        <div class="mt-4">
+                            <div class="card bg-light border-success">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-clipboard-check"></i> Summary for: @summaryResult.FileName
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="summary-content">
+                                        @((MarkupString)FormatSummary(summaryResult.Summary))
+                                    </div>
+                                    <div class="mt-3">
+                                        <button class="btn btn-outline-primary btn-sm" @onclick="CopySummaryToClipboard">
+                                            <i class="fas fa-copy"></i> Copy Summary
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm ms-2" @onclick="ClearResults">
+                                            <i class="fas fa-refresh"></i> Process Another Lecture
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+            
+            <!-- How it works section -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6 class="card-title">🔬 How it works:</h6>
+                    <ol class="small text-muted mb-0">
+                        <li>Upload your PDF lecture file</li>
+                        <li>Our system extracts text from the PDF</li>
+                        <li>AWS Bedrock AI analyzes the content</li>
+                        <li>Get a comprehensive summary with key points</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private UploadModel uploadModel = new();
+    private IBrowserFile? selectedFile;
+    private SummaryResponse? summaryResult;
+    private string errorMessage = string.Empty;
+    private bool isProcessing = false;
+
+    public class UploadModel
+    {
+        public IBrowserFile? File { get; set; }
+    }
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        uploadModel.File = e.File;
+        errorMessage = string.Empty;
+        
+        // Validate file
+        if (selectedFile != null)
+        {
+            if (selectedFile.Size > 10 * 1024 * 1024) // 10MB
+            {
+                errorMessage = "File size must be less than 10MB.";
+                selectedFile = null;
+                uploadModel.File = null;
+            }
+            else if (!selectedFile.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                errorMessage = "Only PDF files are supported.";
+                selectedFile = null;
+                uploadModel.File = null;
+            }
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (selectedFile == null) return;
+
+        isProcessing = true;
+        errorMessage = string.Empty;
+        summaryResult = null;
+
+        try
+        {
+            using var stream = selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            summaryResult = await SummaryService.SummarizeLectureAsync(stream, selectedFile.Name);
+            
+            if (!summaryResult.Success)
+            {
+                errorMessage = summaryResult.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private string FormatSummary(string summary)
+    {
+        if (string.IsNullOrWhiteSpace(summary))
+            return string.Empty;
+
+        // Convert newlines to HTML breaks and format bullet points
+        var formatted = summary
+            .Replace("\n", "<br/>")
+            .Replace("• ", "<li>")
+            .Replace("- ", "<li>");
+
+        // Wrap in ul tags if we have list items
+        if (formatted.Contains("<li>"))
+        {
+            formatted = "<ul>" + formatted.Replace("<li>", "</li><li>") + "</li></ul>";
+            formatted = formatted.Replace("<ul></li>", "<ul>"); // Fix first item
+        }
+
+        return formatted;
+    }
+
+    private async Task CopySummaryToClipboard()
+    {
+        if (summaryResult?.Summary != null)
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", summaryResult.Summary);
+            // Could add a toast notification here
+        }
+    }
+
+    private void ClearResults()
+    {
+        summaryResult = null;
+        selectedFile = null;
+        uploadModel = new();
+        errorMessage = string.Empty;
+    }
+}
