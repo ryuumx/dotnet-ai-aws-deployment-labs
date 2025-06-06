@@ -22,7 +22,7 @@ namespace LectureSummarizer.Web.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SummarizeLecture(IFormFile file)
+        public async Task<IActionResult> SummarizeLecture(IFormFile file, string orientation = "portrait")
         {
             if (file == null || file.Length == 0)
             {
@@ -32,12 +32,13 @@ namespace LectureSummarizer.Web.Controllers
 
             try
             {
-                var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "http://localhost:5273";
+                var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "http://localhost:5131";
                 
                 using var formContent = new MultipartFormDataContent();
                 using var fileContent = new StreamContent(file.OpenReadStream());
                 fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
                 formContent.Add(fileContent, "file", file.FileName);
+                formContent.Add(new StringContent(orientation), "orientation");
 
                 var response = await _httpClient.PostAsync($"{apiBaseUrl}/api/summary/summarize", formContent);
                 

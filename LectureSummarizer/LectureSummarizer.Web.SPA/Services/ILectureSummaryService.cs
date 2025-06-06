@@ -4,6 +4,6 @@ namespace LectureSummarizer.Web.SPA.Services
 {
     public interface ILectureSummaryService
     {
-        Task<SummaryResponse> SummarizeLectureAsync(Stream fileStream, string fileName);
+        Task<SummaryResponse> SummarizeLectureAsync(Stream fileStream, string fileName, string orientation = "portrait");
     }
 }

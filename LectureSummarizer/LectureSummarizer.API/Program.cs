@@ -21,9 +21,12 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowWebApp",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5000", "https://localhost:5001")
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
+            policy.WithOrigins(
+                "http://localhost:5235", "https://localhost:7185",  // Razor Web
+                "http://localhost:5252", "https://localhost:7108"   // Blazor SPA
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
         });
 });
 

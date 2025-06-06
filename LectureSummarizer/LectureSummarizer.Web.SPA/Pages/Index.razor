@@ -39,6 +39,20 @@
                             <ValidationMessage For="@(() => uploadModel.File)" />
                         </div>
 
+                        <div class="mb-3">
+                            <label for="orientationSelect" class="form-label fw-bold">PDF Orientation</label>
+                            <select id="orientationSelect" 
+                                    class="form-select" 
+                                    @bind="selectedOrientation" 
+                                    disabled="@isProcessing">
+                                <option value="portrait">📄 Portrait (Vertical) - Standard documents, textbooks</option>
+                                <option value="landscape">📊 Landscape (Horizontal) - Presentations, slides</option>
+                            </select>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle"></i> Choose the orientation that matches your PDF for better text recognition
+                            </div>
+                        </div>
+
                         <div class="d-grid">
                             <button type="submit" 
                                     class="btn btn-primary btn-lg" 
@@ -106,6 +120,7 @@
     private SummaryResponse? summaryResult;
     private string errorMessage = string.Empty;
     private bool isProcessing = false;
+    private string selectedOrientation = "portrait";
 
     public class UploadModel
     {
@@ -147,7 +162,7 @@
         try
         {
             using var stream = selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
-            summaryResult = await SummaryService.SummarizeLectureAsync(stream, selectedFile.Name);
+            summaryResult = await SummaryService.SummarizeLectureAsync(stream, selectedFile.Name, selectedOrientation);
             
             if (!summaryResult.Success)
             {

@@ -24,6 +24,15 @@
                             <input type="file" class="form-control" id="file" name="file" accept=".pdf" required>
                             <div class="form-text">Only PDF files are supported. Maximum file size: 10MB</div>
                         </div>
+
+                        <div class="mb-3">
+                            <label for="orientation" class="form-label">PDF Orientation</label>
+                            <select class="form-select" id="orientation" name="orientation">
+                                <option value="portrait">📄 Portrait (Vertical) - Standard documents, textbooks</option>
+                                <option value="landscape">📊 Landscape (Horizontal) - Presentations, slides</option>
+                            </select>
+                            <div class="form-text">Choose the orientation that matches your PDF for better text recognition</div>
+                        </div>
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary" id="submitBtn">
                                 <span id="spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>

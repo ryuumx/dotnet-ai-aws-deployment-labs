@@ -14,16 +14,17 @@ namespace LectureSummarizer.Web.SPA.Services
             _configuration = configuration;
         }
 
-        public async Task<SummaryResponse> SummarizeLectureAsync(Stream fileStream, string fileName)
+        public async Task<SummaryResponse> SummarizeLectureAsync(Stream fileStream, string fileName, string orientation = "portrait")
         {
             try
             {
-                var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "http://localhost:5273";
+                var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "http://localhost:5131";
                 
                 using var formContent = new MultipartFormDataContent();
                 using var streamContent = new StreamContent(fileStream);
                 streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
                 formContent.Add(streamContent, "file", fileName);
+                formContent.Add(new StringContent(orientation), "orientation");
 
                 var response = await _httpClient.PostAsync($"{apiBaseUrl}/api/summary/summarize", formContent);
                 

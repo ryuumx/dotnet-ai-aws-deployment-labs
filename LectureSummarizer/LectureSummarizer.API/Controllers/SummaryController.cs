@@ -23,7 +23,7 @@ namespace LectureSummarizer.API.Controllers
         }
 
         [HttpPost("summarize")]
-        public async Task<ActionResult<SummaryResponse>> SummarizeLecture(IFormFile file)
+        public async Task<ActionResult<SummaryResponse>> SummarizeLecture(IFormFile file, [FromForm] string orientation = "portrait")
         {
             try
             {
@@ -45,7 +45,7 @@ namespace LectureSummarizer.API.Controllers
                     });
                 }
 
-                // Extract text from PDF
+                // Convert PDF to images
                 byte[] fileContent;
                 using (var memoryStream = new MemoryStream())
                 {
@@ -53,19 +53,19 @@ namespace LectureSummarizer.API.Controllers
                     fileContent = memoryStream.ToArray();
                 }
 
-                var extractedText = await _pdfExtractor.ExtractTextAsync(fileContent);
+                var images = await _pdfExtractor.ConvertPdfToImagesAsync(fileContent, orientation);
                 
-                if (string.IsNullOrWhiteSpace(extractedText))
+                if (images == null || images.Count == 0)
                 {
                     return BadRequest(new SummaryResponse
                     {
                         Success = false,
-                        ErrorMessage = "Unable to extract text from PDF."
+                        ErrorMessage = "Unable to convert PDF to images."
                     });
                 }
 
-                // Generate summary using Bedrock
-                var summary = await _bedrockService.SummarizeLectureAsync(extractedText);
+                // Generate summary using Bedrock with images
+                var summary = await _bedrockService.SummarizeLectureFromImagesAsync(images);
 
                 return Ok(new SummaryResponse
                 {

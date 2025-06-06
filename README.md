@@ -12,9 +12,9 @@ The **Lecture Summarizer** is a practical .NET application that demonstrates AI 
 ### Architecture Components
 
 **Backend Technologies:**
-- **.NET 8 Web API** - RESTful API for PDF processing and AI integration
-- **AWS Bedrock** - AI-powered text summarization using Claude 3 Sonnet
-- **iTextSharp** - PDF text extraction library
+- **.NET 9 Web API** - RESTful API for PDF processing and AI integration
+- **AWS Bedrock** - AI-powered visual analysis using Claude 3.5 Sonnet v2
+- **Docnet.Core** - PDF to image conversion library for visual processing
 - **CORS Configuration** - Cross-origin support for frontend communication
 
 **Frontend Options:**
@@ -23,7 +23,8 @@ The **Lecture Summarizer** is a practical .NET application that demonstrates AI 
 
 **Key Features:**
 - 📄 **PDF Upload** - Accepts lecture documents in PDF format
-- 🤖 **AI Summarization** - Extracts key concepts and insights using AWS Bedrock
+- 🖼️ **Visual AI Analysis** - Converts PDF pages to images for comprehensive visual analysis
+- 🤖 **AI Summarization** - Uses Claude 3.5 Sonnet v2 to analyze diagrams, charts, and formatted content
 - 🎨 **Responsive UI** - Clean, Bootstrap-styled interface
 - 🔒 **Secure Processing** - Proper error handling and validation
 - 📊 **Health Monitoring** - Built-in health check endpoints
@@ -40,7 +41,7 @@ The **Lecture Summarizer** is a practical .NET application that demonstrates AI 
 **Frontend Options:**
 - **Razor MVC on EC2** (Lab 1) - Server-side rendering
 - **Blazor SPA on S3** (Labs 2 & 3) - Client-side application
-
+                                                                                                                            
 **Possible Combinations:**
 ```
 Frontend              Backend              Use Case
@@ -266,9 +267,9 @@ Before deploying to AWS, you can run and test the application locally. This requ
    dotnet run
    
    # Test health endpoint in another terminal
-   curl http://localhost:5273/health
+   curl http://localhost:5131/health
    
-   # API will be available at http://localhost:5273
+   # API will be available at http://localhost:5131
    ```
 
 3. **Test Razor Frontend**:
@@ -279,7 +280,7 @@ Before deploying to AWS, you can run and test the application locally. This requ
    # Run the web application
    dotnet run
    
-   # Web app will be available at http://localhost:5000
+   # Web app will be available at http://localhost:5235
    ```
 
 4. **Test Blazor SPA Frontend**:
@@ -290,7 +291,7 @@ Before deploying to AWS, you can run and test the application locally. This requ
    # Run the SPA
    dotnet run
    
-   # SPA will be available at http://localhost:5001
+   # SPA will be available at http://localhost:5252
    ```
 
 5. **End-to-End Testing**:
