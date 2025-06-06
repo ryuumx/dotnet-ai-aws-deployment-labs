@@ -211,44 +211,122 @@ Internet → CloudFront → S3 (Blazor SPA)
 ### Prerequisites
 
 - **AWS Account** with appropriate permissions
-- **.NET 8 SDK** installed locally
+- **.NET 9 SDK** installed locally
 - **Docker Desktop** (for Labs 2 & 3)
-- **AWS CLI** configured
+- **AWS CLI** installed and configured
 - **AWS SAM CLI** (for Lab 3)
 - **Git** for version control
 
-### Local Development and Testing
+### 🔧 AWS CLI Installation & Configuration
 
-Before deploying to AWS, you can run and test the application locally. This requires AWS credentials for Bedrock AI integration.
+**Required for all labs**: The AWS CLI is essential for managing AWS resources and deploying applications.
 
-#### AWS Credentials for Local Development
+**Step 1: Install AWS CLI**
 
-1. **Create IAM User for Local Development**:
+**Windows:**
+```bash
+# Download and run the AWS CLI MSI installer
+# Visit: https://awscli.amazonaws.com/AWSCLIV2.msi
+# Or use winget:
+winget install Amazon.AWSCLI
+```
+
+**macOS:**
+```bash
+# Using Homebrew (recommended):
+brew install awscli
+
+# Or download the installer:
+curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
+sudo installer -pkg AWSCLIV2.pkg -target /
+```
+
+**Linux:**
+```bash
+# Download and install:
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+
+# For Ubuntu/Debian, you can also use:
+sudo apt update && sudo apt install awscli
+```
+
+**Verification:**
+```bash
+# Verify installation
+aws --version
+# Should output something like: aws-cli/2.x.x Python/3.x.x
+```
+
+**Step 2: Create IAM User and Access Keys**
+
+1. **Create IAM User for Development**:
    - Go to **IAM Console** → **Users** → **Create user**
-   - **User name**: `lecture-local-developer`
+   - **User name**: `lecture-developer`
    - **Attach policies directly**:
      - `AmazonBedrockFullAccess` (for AI functionality)
-     - `CloudWatchLogsFullAccess` (for logging)
+     - `CloudWatchFullAccess` (for logging)
+     - `AmazonEC2FullAccess` (for Lab 1 - EC2 instances, VPC, security groups)
+     - `AmazonECS_FullAccess` (for Lab 2 - container orchestration)
+     - `AmazonS3FullAccess` (for Labs 2 & 3 - static hosting, file storage)
+     - `AWSLambda_FullAccess` (for Lab 3 - serverless functions)
+     - `CloudFrontFullAccess` (for Labs 2 & 3 - CDN)
+     - `ElasticLoadBalancingFullAccess` (for Labs 1 & 2 - load balancers)
+     - `IAMFullAccess` (for creating service roles across all labs)
+     - `AmazonAPIGatewayAdministrator` (for Lab 3 - API Gateway)
+     - `AWSCloudFormationFullAccess` (for Lab 3 - Infrastructure as Code)
+
+   **⚠️ Security Note**: These are broad permissions for learning purposes. In production environments, use more restrictive, least-privilege policies.
 
 2. **Create Access Keys**:
    - Select your user → **Security credentials** tab
    - **Create access key** → **Command Line Interface (CLI)**
    - **Save credentials** securely
 
-3. **Configure AWS CLI**:
-   ```bash
-   # Configure AWS credentials
-   aws configure
-   
-   # Enter your values:
-   # AWS Access Key ID: [Your Access Key ID]
-   # AWS Secret Access Key: [Your Secret Access Key]
-   # Default region name: us-east-1
-   # Default output format: json
-   
-   # Verify configuration
-   aws sts get-caller-identity
-   ```
+**Step 3: Configure AWS CLI**
+
+```bash
+# Configure AWS credentials
+aws configure
+
+# Enter your values:
+# AWS Access Key ID: [Your Access Key ID from Step 2]
+# AWS Secret Access Key: [Your Secret Access Key from Step 2]
+# Default region name: us-west-2
+# Default output format: json
+
+# Verify configuration
+aws sts get-caller-identity
+```
+
+### ⚠️ Critical Setup: AWS Bedrock Model Access
+
+**REQUIRED FOR ALL LABS**: Before proceeding with any lab (local testing, EC2, ECS, or Lambda deployment), you must request access to AI models in AWS Bedrock. **All labs will fail without this step.**
+
+**Steps to Request Model Access:**
+1. **Go to AWS Console** → **Amazon Bedrock**
+2. **Navigate to Model Access** (in the left sidebar)
+3. **Request access** for the following models:
+   - **Claude 3.5 Sonnet v2** (anthropic.claude-3-5-sonnet-20241022-v2:0)
+   - **Claude 3 Sonnet** (anthropic.claude-3-sonnet-20240229-v1:0) - *fallback option*
+4. **Submit the request** - approval is typically instant for most accounts
+5. **Wait for "Access granted"** status before proceeding with any lab
+
+**Important Notes:**
+- Model access is **region-specific** - request access in the same region where you plan to deploy
+- **Recommended region**: `us-west-2` (used in all lab examples)
+- This applies to **all deployment scenarios**: local testing, EC2, ECS containers, and Lambda functions
+- Without model access, the application will return errors when attempting to generate summaries
+
+**Verification**: You can verify model access by running:
+```bash
+aws bedrock list-foundation-models --region us-west-2
+```
+
+### Local Development and Testing
+
+Before deploying to AWS, you can run and test the application locally. This requires the AWS CLI setup completed in the previous section.
 
 #### Running the Application Locally
 

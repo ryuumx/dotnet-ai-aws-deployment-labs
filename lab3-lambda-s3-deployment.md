@@ -41,7 +41,8 @@ This lab introduces **Infrastructure as Code (IaC)** concepts using **AWS SAM (S
 - **AWS SAM CLI installed** - [Install SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html)
 - **Docker installed and running locally** - [Install Docker Desktop](https://docs.docker.com/get-docker/)
 - Basic understanding of serverless concepts
-- Optionally: Resources from Lab 1 or Lab 2 (S3 bucket, IAM roles can be reused)
+- **Note**: This lab can be completed independently without Labs 1 or 2
+- Optionally: If you completed Labs 1 or 2, some resources (IAM roles) can be reused
 
 ### AWS Credentials Setup
 
@@ -96,7 +97,7 @@ aws configure
 # Enter your values:
 # AWS Access Key ID: [Your Access Key ID]
 # AWS Secret Access Key: [Your Secret Access Key]  
-# Default region name: us-east-1
+# Default region name: us-west-2
 # Default output format: json
 
 # Verify AWS configuration
@@ -437,7 +438,7 @@ namespace LectureSummarizer.Lambda.Services
     public class BedrockService : IBedrockService
     {
         private readonly IAmazonBedrockRuntime _bedrockClient;
-        private const string ModelId = "anthropic.claude-3-sonnet-20240229-v1:0";
+        private const string ModelId = "anthropic.claude-3-5-sonnet-20241022-v2:0";
 
         public BedrockService(IAmazonBedrockRuntime bedrockClient)
         {
@@ -545,7 +546,7 @@ Resources:
                 - bedrock:InvokeModel
                 - bedrock:InvokeModelWithResponseStream
               Resource: 
-                - !Sub 'arn:aws:bedrock:${AWS::Region}::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0'
+                - !Sub 'arn:aws:bedrock:${AWS::Region}::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0'
             - Effect: Allow
               Action:
                 - logs:CreateLogGroup
@@ -679,7 +680,7 @@ version = 0.1
 stack_name = "lecture-summarizer-serverless"
 s3_bucket = ""  # SAM will create this automatically
 s3_prefix = "lecture-summarizer"
-region = "us-east-1"
+region = "us-west-2"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
 image_repositories = []
@@ -691,7 +692,7 @@ parameter_overrides = "Environment=dev"
 stack_name = "lecture-summarizer-serverless-prod"
 s3_bucket = ""
 s3_prefix = "lecture-summarizer-prod"
-region = "us-east-1"
+region = "us-west-2"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
 parameter_overrides = "Environment=prod"
@@ -739,7 +740,7 @@ ENVIRONMENT=${1:-dev}
 
 echo "📋 Deployment Configuration:"
 echo "   Environment: ${ENVIRONMENT}"
-echo "   Region: us-east-1"
+echo "   Region: us-west-2"
 echo "   Stack: lecture-summarizer-serverless${ENVIRONMENT:+-$ENVIRONMENT}"
 
 # Build Lambda function first
@@ -830,7 +831,7 @@ sam local start-api --port 3000
 **LectureSummarizer.Web.SPA/wwwroot/appsettings.json**
 ```json
 {
-  "ApiBaseUrl": "https://your-api-id.execute-api.us-east-1.amazonaws.com/dev"
+  "ApiBaseUrl": "https://your-api-id.execute-api.us-west-2.amazonaws.com/dev"
 }
 ```
 
@@ -849,7 +850,7 @@ API_URL=$(aws cloudformation describe-stacks \
 if [ -z "$API_URL" ]; then
     echo "⚠️ Could not get API URL from CloudFormation. Using placeholder."
     echo "💡 Make sure to update appsettings.json manually after deployment."
-    API_URL="https://your-api-id.execute-api.us-east-1.amazonaws.com/dev/"
+    API_URL="https://your-api-id.execute-api.us-west-2.amazonaws.com/dev/"
 fi
 
 echo "📋 Configuration:"
@@ -882,7 +883,7 @@ if [ $? -eq 0 ]; then
     echo "📋 Size: $(du -h spa-deployment.zip | cut -f1)"
     
     echo "📋 Next steps:"
-    echo "   1. Create S3 bucket: aws s3 mb s3://lecture-spa-[random-suffix]"
+    echo "   1. Create S3 bucket: aws s3 mb s3://lecture-summarizer-spa-serverless-[random-suffix]"
     echo "   2. Upload files: aws s3 sync ./publish/spa/wwwroot s3://your-bucket-name"
     echo "   3. Configure bucket for static hosting"
 else
@@ -950,8 +951,8 @@ aws lambda get-function --function-name lecture-summarizer-dev
 1. **Navigate to S3 Console** → **Create bucket**
 
 2. **Configure Bucket**:
-   - **Bucket name**: `lecture-spa-serverless-[random-suffix]` (must be globally unique)
-   - **Region**: us-east-1
+   - **Bucket name**: `lecture-summarizer-spa-serverless-[random-suffix]` (must be globally unique)
+   - **Region**: us-west-2
    - **Block all public access**: UNCHECKED ⚠️
    - **Acknowledge public access warning**: Checked
 
@@ -995,13 +996,13 @@ aws lambda get-function --function-name lecture-summarizer-dev
 ./scripts/build-spa-serverless.sh
 
 # Upload to S3 (replace with your bucket name)
-aws s3 sync ./publish/spa/wwwroot s3://lecture-spa-serverless-[random-suffix] --delete
+aws s3 sync ./publish/spa/wwwroot s3://lecture-summarizer-spa-serverless-[random-suffix] --delete
 
 # Verify upload
-aws s3 ls s3://lecture-spa-serverless-[random-suffix] --recursive
+aws s3 ls s3://lecture-summarizer-spa-serverless-[random-suffix] --recursive
 
 # Get website URL
-echo "Website URL: http://lecture-spa-serverless-[random-suffix].s3-website-us-east-1.amazonaws.com"
+echo "Website URL: http://lecture-summarizer-spa-serverless-[random-suffix].s3-website-us-west-2.amazonaws.com"
 ```
 
 ### 5.5 Test S3 Website
@@ -1278,10 +1279,10 @@ aws cloudformation describe-stacks --stack-name lecture-summarizer-serverless \
 
 ```bash
 # Empty S3 bucket first
-aws s3 rm s3://lecture-spa-serverless-[random-suffix] --recursive
+aws s3 rm s3://lecture-summarizer-spa-serverless-[random-suffix] --recursive
 
 # Delete S3 bucket
-aws s3 rb s3://lecture-spa-serverless-[random-suffix]
+aws s3 rb s3://lecture-summarizer-spa-serverless-[random-suffix]
 
 # Delete CloudFront distribution (must be disabled first)
 # This is done through AWS Console as it requires multiple steps

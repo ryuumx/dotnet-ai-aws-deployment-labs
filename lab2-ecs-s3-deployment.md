@@ -27,13 +27,13 @@ Internet → CloudFront → S3 (Blazor SPA)
 
 ### AWS Credentials Setup
 
-⚠️ **Note**: If you completed **local development setup** from the main README, you already have AWS credentials configured. You can reuse the `lecture-local-developer` user and add the additional permissions listed below, or create a new dedicated user for this lab.
+⚠️ **Note**: If you completed **local development setup** from the main README, you already have AWS credentials configured. You can reuse the `lecture-developer` user and add the additional permissions listed below, or create a new dedicated user for this lab.
 
 ⚠️ **Security Best Practice**: Create a dedicated IAM user for this lab instead of using Administrator access.
 
 #### Step 1: Create IAM User (AWS Console) - Skip if reusing local dev credentials
 
-💡 **If reusing local dev credentials**: Add the following additional policies to your existing `lecture-local-developer` user:
+💡 **If reusing local dev credentials**: Add the following additional policies to your existing `lecture-developer` user:
 - `AmazonECS_FullAccess`
 - `AmazonEC2ContainerRegistryFullAccess`
 - `AmazonS3FullAccess`
@@ -83,7 +83,7 @@ aws configure
 # Enter your values:
 # AWS Access Key ID: [Your Access Key ID]
 # AWS Secret Access Key: [Your Secret Access Key]  
-# Default region name: us-east-1
+# Default region name: us-west-2
 # Default output format: json
 
 # Verify configuration
@@ -119,13 +119,13 @@ docker run hello-world
 
 **LectureSummarizer.API/Dockerfile**
 ```dockerfile
-# Use the official .NET 8 runtime as base image
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+# Use the official .NET 9 runtime as base image
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
 EXPOSE 5000
 
 # Use the .NET SDK for building
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Copy project files and restore dependencies
@@ -204,7 +204,7 @@ README.md
   },
   "AllowedHosts": "*",
   "AWS": {
-    "Region": "us-east-1"
+    "Region": "us-west-2"
   }
 }
 ```
@@ -235,8 +235,8 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy.WithOrigins(
-                "http://localhost:5001",
-                "https://localhost:5001",
+                "http://localhost:5252",
+                "https://localhost:5252",
                 "https://*.cloudfront.net",
                 "https://*.amazonaws.com"
             )
@@ -276,14 +276,14 @@ app.Run();
 **LectureSummarizer.Web.SPA/wwwroot/appsettings.json**
 ```json
 {
-  "ApiBaseUrl": "https://lecture-api-alb-123456789.us-east-1.elb.amazonaws.com"
+  "ApiBaseUrl": "https://lecture-api-alb-123456789.us-west-2.elb.amazonaws.com"
 }
 ```
 
 **LectureSummarizer.Web.SPA/wwwroot/appsettings.Development.json**
 ```json
 {
-  "ApiBaseUrl": "http://localhost:5273"
+  "ApiBaseUrl": "http://localhost:5131"
 }
 ```
 
@@ -300,7 +300,7 @@ echo "🐳 Building Docker container for API..."
 # Set variables
 IMAGE_NAME="lecture-summarizer-api"
 TAG="latest"
-REGION="us-east-1"
+REGION="us-west-2"
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 ECR_REPOSITORY="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${IMAGE_NAME}"
 
@@ -339,7 +339,7 @@ echo "📤 Pushing Docker image to ECR..."
 # Set variables
 IMAGE_NAME="lecture-summarizer-api"
 TAG="latest"
-REGION="us-east-1"
+REGION="us-west-2"
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 ECR_REPOSITORY="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${IMAGE_NAME}"
 
@@ -409,7 +409,7 @@ echo "🚀 Deploying to ECS..."
 CLUSTER_NAME="lecture-summarizer-cluster"
 SERVICE_NAME="lecture-summarizer-api-service"
 TASK_FAMILY="lecture-summarizer-api-task"
-REGION="us-east-1"
+REGION="us-west-2"
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 IMAGE_URI="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/lecture-summarizer-api:latest"
 
@@ -582,7 +582,7 @@ docker run -p 5000:5000 \
   -e ASPNETCORE_ENVIRONMENT=Development \
   -e AWS_ACCESS_KEY_ID=your_access_key \
   -e AWS_SECRET_ACCESS_KEY=your_secret_key \
-  -e AWS_DEFAULT_REGION=us-east-1 \
+  -e AWS_DEFAULT_REGION=us-west-2 \
   lecture-summarizer-api:latest
 
 # Test health endpoint
@@ -613,7 +613,7 @@ curl http://localhost:5000/health
 
 3. **Container Definition**:
    - **Container name**: `lecture-api`
-   - **Image URI**: `[ACCOUNT-ID].dkr.ecr.us-east-1.amazonaws.com/lecture-summarizer-api:latest`
+   - **Image URI**: `[ACCOUNT-ID].dkr.ecr.us-west-2.amazonaws.com/lecture-summarizer-api:latest`
    - **Port mappings**: 
      - **Container port**: 5000
      - **Protocol**: TCP
@@ -624,7 +624,7 @@ curl http://localhost:5000/health
 4. **Logging**:
    - **Log driver**: `awslogs`
    - **Log group**: `/ecs/lecture-summarizer-api`
-   - **Log region**: `us-east-1`
+   - **Log region**: `us-west-2`
    - **Log stream prefix**: `ecs`
 
 5. **Create Task Definition**
@@ -665,7 +665,7 @@ curl http://localhost:5000/health
 2. **Test API**:
    ```bash
    # Get ALB DNS name from EC2 Console → Load Balancers
-   curl http://lecture-ecs-alb-123456789.us-east-1.elb.amazonaws.com/health
+   curl http://lecture-ecs-alb-123456789.us-west-2.elb.amazonaws.com/health
    ```
 
 ## Step 5: Deploy Blazor SPA to S3
@@ -676,7 +676,7 @@ curl http://localhost:5000/health
 
 2. **Configure Bucket**:
    - **Bucket name**: `lecture-summarizer-spa-[random-suffix]` (must be globally unique)
-   - **Region**: us-east-1
+   - **Region**: us-west-2
    - **Block all public access**: UNCHECKED ⚠️
    - **Acknowledge public access warning**: Checked
 
@@ -734,7 +734,7 @@ aws s3 ls s3://lecture-summarizer-spa-[random-suffix] --recursive
 
 ```bash
 # Get website URL from S3 Console → Properties → Static website hosting
-# Visit: http://lecture-summarizer-spa-[random-suffix].s3-website-us-east-1.amazonaws.com
+# Visit: http://lecture-summarizer-spa-[random-suffix].s3-website-us-west-2.amazonaws.com
 ```
 
 ## Step 6: Create CloudFront Distribution (Optional but Recommended)

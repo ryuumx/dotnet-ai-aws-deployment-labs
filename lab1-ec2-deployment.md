@@ -41,7 +41,7 @@ Internet → ALB (Frontend) → EC2 (Razor MVC)
   },
   "AllowedHosts": "*",
   "AWS": {
-    "Region": "us-east-1"
+    "Region": "us-west-2"
   }
 }
 ```
@@ -56,7 +56,7 @@ Internet → ALB (Frontend) → EC2 (Razor MVC)
     }
   },
   "AllowedHosts": "*",
-  "ApiBaseUrl": "http://lecture-api-alb-123456789.us-east-1.elb.amazonaws.com"
+  "ApiBaseUrl": "http://lecture-api-alb-123456789.us-west-2.elb.amazonaws.com"
 }
 ```
 
@@ -71,9 +71,9 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy.WithOrigins(
-                "http://localhost:5000", 
-                "https://localhost:5001",
-                "http://lecture-web-alb-123456789.us-east-1.elb.amazonaws.com"  // Frontend ALB
+                "http://localhost:5235", 
+                "https://localhost:7185",
+                "http://lecture-web-alb-123456789.us-west-2.elb.amazonaws.com"  // Frontend ALB
             )
             .AllowAnyHeader()
             .AllowAnyMethod();
@@ -186,8 +186,8 @@ echo "⚙️ Setting up EC2 instance for .NET application..."
 # Update system
 sudo dnf update -y
 
-# Install .NET 8 Runtime
-sudo dnf install -y dotnet-runtime-8.0 aspnetcore-runtime-8.0
+# Install .NET 9 Runtime
+sudo dnf install -y dotnet-runtime-9.0 aspnetcore-runtime-9.0
 
 # Create application directory
 sudo mkdir -p /var/www/app
@@ -246,11 +246,11 @@ echo "   3. Configure nginx if needed"
    - **VPC ID**: Select your VPC
    - **Subnet settings**:
      - **Subnet name**: `lecture-public-1a`
-     - **Availability Zone**: us-east-1a
+     - **Availability Zone**: us-west-2a
      - **IPv4 CIDR block**: `10.0.1.0/24`
    - Add another subnet:
      - **Subnet name**: `lecture-public-1b`
-     - **Availability Zone**: us-east-1b
+     - **Availability Zone**: us-west-2b
      - **IPv4 CIDR block**: `10.0.2.0/24`
    - Click **"Create subnet"**
 
@@ -390,7 +390,7 @@ echo "   3. Configure nginx if needed"
                    "bedrock:InvokeModel",
                    "bedrock:InvokeModelWithResponseStream"
                ],
-               "Resource": "arn:aws:bedrock:*::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0"
+               "Resource": "arn:aws:bedrock:*::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0"
            }
        ]
    }
@@ -665,11 +665,11 @@ sudo journalctl -u lecture-web -f
 1. **Get Frontend ALB DNS name**:
    - Go to **EC2 Console** → **Load Balancers**
    - Select **"lecture-web-alb"**
-   - Copy the **DNS name** (e.g., `lecture-web-alb-123456789.us-east-1.elb.amazonaws.com`)
+   - Copy the **DNS name** (e.g., `lecture-web-alb-123456789.us-west-2.elb.amazonaws.com`)
 
 2. **Get API ALB DNS name**:
    - Select **"lecture-api-alb"**
-   - Copy the **DNS name** (e.g., `lecture-api-alb-987654321.us-east-1.elb.amazonaws.com`)
+   - Copy the **DNS name** (e.g., `lecture-api-alb-987654321.us-west-2.elb.amazonaws.com`)
 
 ### 5.2 Update API CORS Settings
 
@@ -685,10 +685,10 @@ Update the API's `appsettings.Production.json` and redeploy:
   },
   "AllowedHosts": "*",
   "AWS": {
-    "Region": "us-east-1"
+    "Region": "us-west-2"
   },
   "CorsOrigins": [
-    "http://lecture-web-alb-123456789.us-east-1.elb.amazonaws.com"
+    "http://lecture-web-alb-123456789.us-west-2.elb.amazonaws.com"
   ]
 }
 ```
@@ -703,8 +703,8 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy.WithOrigins(corsOrigins.Concat(new[] {
-                "http://localhost:5000", 
-                "https://localhost:5001"
+                "http://localhost:5235", 
+                "https://localhost:7185"
             }).ToArray())
             .AllowAnyHeader()
             .AllowAnyMethod();
@@ -718,7 +718,7 @@ builder.Services.AddCors(options =>
 
 ```bash
 # Test API health endpoint
-curl http://lecture-api-alb-123456789.us-east-1.elb.amazonaws.com/api/health
+curl http://lecture-api-alb-123456789.us-west-2.elb.amazonaws.com/api/health
 
 # Expected response:
 # {"status":"healthy","timestamp":"2024-01-15T10:30:00Z","service":"lecture-summarizer-api"}
