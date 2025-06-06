@@ -116,7 +116,7 @@ docker info
 
 ## Step 1: Prepare Lambda Function
 
-### 1.1 Create Lambda-Specific API Project
+### 1.1 Create Lambda Container Project
 
 📁 **Create in**: `LectureSummarizer/` root directory
 
@@ -124,8 +124,8 @@ docker info
 # Navigate to solution root
 cd LectureSummarizer
 
-# Create new Lambda project
-dotnet new lambda.NativeAOT -n LectureSummarizer.Lambda
+# Create new Lambda project for container deployment
+dotnet new lambda.image -n LectureSummarizer.Lambda
 dotnet sln add LectureSummarizer.Lambda
 cd LectureSummarizer.Lambda
 dotnet add reference ../LectureSummarizer.Shared
@@ -137,9 +137,11 @@ dotnet add reference ../LectureSummarizer.Shared
 # Navigate to Lambda project directory
 cd LectureSummarizer.Lambda
 
-# Add required packages
-dotnet add package AWSSDK.BedrockRuntime
-dotnet add package iTextSharp.LGPLv2.Core
+# Add required packages (same as the main API)
+dotnet add package AWSSDK.BedrockRuntime --version 4.0.0.4
+dotnet add package AWSSDK.Extensions.NETCore.Setup --version 4.0.1
+dotnet add package Docnet.Core --version 2.6.0
+dotnet add package SixLabors.ImageSharp --version 3.1.5
 dotnet add package Amazon.Lambda.APIGatewayEvents
 dotnet add package Amazon.Lambda.Core
 dotnet add package Amazon.Lambda.Serialization.SystemTextJson
@@ -241,20 +243,20 @@ public class Function
             var pdfExtractor = _serviceProvider.GetRequiredService<IPdfTextExtractor>();
             var bedrockService = _serviceProvider.GetRequiredService<IBedrockService>();
 
-            // Extract text from PDF
-            var extractedText = await pdfExtractor.ExtractTextAsync(fileData.Content);
+            // Convert PDF to images for visual analysis (same as original API)
+            var images = await pdfExtractor.ConvertPdfToImagesAsync(fileData.Content, "portrait");
             
-            if (string.IsNullOrWhiteSpace(extractedText))
+            if (images == null || images.Count == 0)
             {
                 return CreateResponse(400, JsonSerializer.Serialize(new SummaryResponse
                 {
                     Success = false,
-                    ErrorMessage = "Unable to extract text from PDF."
+                    ErrorMessage = "Unable to convert PDF to images."
                 }));
             }
 
-            // Generate summary using Bedrock
-            var summary = await bedrockService.SummarizeLectureAsync(extractedText);
+            // Generate summary using Bedrock with visual analysis
+            var summary = await bedrockService.SummarizeLectureFromImagesAsync(images);
 
             var response = new SummaryResponse
             {
@@ -373,127 +375,44 @@ public class Function
 
 ### 1.4 Copy Service Classes from Original API
 
-**LectureSummarizer.Lambda/Services/IPdfTextExtractor.cs**
-```csharp
-namespace LectureSummarizer.Lambda.Services
-{
-    public interface IPdfTextExtractor
-    {
-        Task<string> ExtractTextAsync(byte[] pdfContent);
-    }
-}
+💡 **Container Deployment Advantage**: Using Lambda container images allows us to use the **exact same code** as the original API, including `Docnet.Core` and `SixLabors.ImageSharp` for full visual analysis capabilities.
+
+**Step 1: Create Services Directory**
+```bash
+# Navigate to Lambda project and create Services directory
+cd LectureSummarizer.Lambda
+mkdir Services
 ```
 
-**LectureSummarizer.Lambda/Services/PdfTextExtractor.cs**
-```csharp
-using iTextSharp.text.pdf;
-using iTextSharp.text.pdf.parser;
-using System.Text;
-
-namespace LectureSummarizer.Lambda.Services
-{
-    public class PdfTextExtractor : IPdfTextExtractor
-    {
-        public async Task<string> ExtractTextAsync(byte[] pdfContent)
-        {
-            return await Task.Run(() =>
-            {
-                var text = new StringBuilder();
-                
-                using (var reader = new PdfReader(pdfContent))
-                {
-                    for (int i = 1; i <= reader.NumberOfPages; i++)
-                    {
-                        text.Append(PdfTextExtractor.GetTextFromPage(reader, i));
-                    }
-                }
-                
-                return text.ToString();
-            });
-        }
-    }
-}
+**Step 2: Copy Service Files from Original API**
+```bash
+# Copy the service interfaces and implementations exactly as they are
+cp ../LectureSummarizer.API/Services/IPdfTextExtractor.cs Services/
+cp ../LectureSummarizer.API/Services/PdfTextExtractor.cs Services/
+cp ../LectureSummarizer.API/Services/IBedrockService.cs Services/
+cp ../LectureSummarizer.API/Services/BedrockService.cs Services/
 ```
 
-**LectureSummarizer.Lambda/Services/IBedrockService.cs**
-```csharp
-namespace LectureSummarizer.Lambda.Services
-{
-    public interface IBedrockService
-    {
-        Task<string> SummarizeLectureAsync(string lectureText);
-    }
-}
+**Step 3: Update Namespaces**
+After copying, you need to update the namespace in each file from `LectureSummarizer.API.Services` to `LectureSummarizer.Lambda.Services`:
+
+```bash
+# Update namespaces in all copied files
+sed -i 's/LectureSummarizer.API.Services/LectureSummarizer.Lambda.Services/g' Services/*.cs
 ```
 
-**LectureSummarizer.Lambda/Services/BedrockService.cs**
-```csharp
-using Amazon.BedrockRuntime;
-using Amazon.BedrockRuntime.Model;
-using System.Text;
-using System.Text.Json;
+**Or manually update each file:**
+- Open each `.cs` file in the `Services/` folder
+- Change `namespace LectureSummarizer.API.Services` to `namespace LectureSummarizer.Lambda.Services`
 
-namespace LectureSummarizer.Lambda.Services
-{
-    public class BedrockService : IBedrockService
-    {
-        private readonly IAmazonBedrockRuntime _bedrockClient;
-        private const string ModelId = "anthropic.claude-3-5-sonnet-20241022-v2:0";
+**Step 4: Verify Files**
+You should now have these files with identical functionality to the original API:
+- `Services/IPdfTextExtractor.cs` - Interface with both text extraction and image conversion methods
+- `Services/PdfTextExtractor.cs` - Full implementation with Docnet.Core and SixLabors.ImageSharp
+- `Services/IBedrockService.cs` - Interface with both text and image analysis methods  
+- `Services/BedrockService.cs` - Full implementation with Claude 3.5 Sonnet v2 visual analysis
 
-        public BedrockService(IAmazonBedrockRuntime bedrockClient)
-        {
-            _bedrockClient = bedrockClient;
-        }
-
-        public async Task<string> SummarizeLectureAsync(string lectureText)
-        {
-            var prompt = $@"Please provide a comprehensive summary of this lecture. Focus on:
-1. Main topics and key concepts
-2. Important points and takeaways
-3. Any conclusions or recommendations
-
-Lecture content:
-{lectureText}
-
-Please provide a well-structured summary in bullet points or short paragraphs:";
-
-            var request = new
-            {
-                anthropic_version = "bedrock-2023-05-31",
-                max_tokens = 1000,
-                messages = new[]
-                {
-                    new
-                    {
-                        role = "user",
-                        content = prompt
-                    }
-                }
-            };
-
-            var jsonRequest = JsonSerializer.Serialize(request);
-            var requestBody = Encoding.UTF8.GetBytes(jsonRequest);
-
-            var invokeRequest = new InvokeModelRequest
-            {
-                ModelId = ModelId,
-                Body = new MemoryStream(requestBody),
-                ContentType = "application/json"
-            };
-
-            var response = await _bedrockClient.InvokeModelAsync(invokeRequest);
-            
-            using var reader = new StreamReader(response.Body);
-            var responseBody = await reader.ReadToEndAsync();
-            
-            var jsonResponse = JsonSerializer.Deserialize<JsonElement>(responseBody);
-            var content = jsonResponse.GetProperty("content")[0].GetProperty("text").GetString();
-            
-            return content ?? "Unable to generate summary.";
-        }
-    }
-}
-```
+💡 **Result**: Your Lambda function now has the exact same visual analysis capabilities as Labs 1 & 2!
 
 ## Step 2: Create SAM Template
 
