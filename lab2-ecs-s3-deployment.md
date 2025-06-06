@@ -425,8 +425,8 @@ TASK_DEFINITION=$(aws ecs register-task-definition \
     --family ${TASK_FAMILY} \
     --network-mode awsvpc \
     --requires-compatibility FARGATE \
-    --cpu 256 \
-    --memory 512 \
+    --cpu 1024 \
+    --memory 2048 \
     --execution-role-arn arn:aws:iam::${ACCOUNT_ID}:role/ecsTaskExecutionRole \
     --task-role-arn arn:aws:iam::${ACCOUNT_ID}:role/LectureSummarizerEC2Role \
     --container-definitions "[{

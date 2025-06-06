@@ -428,8 +428,8 @@ Description: 'Lecture Summarizer - Serverless .NET application'
 
 Globals:
   Function:
-    Timeout: 30
-    MemorySize: 512
+    Timeout: 900
+    MemorySize: 2048
     Runtime: provided.al2
     Architectures:
       - x86_64
